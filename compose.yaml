@@ -1,0 +1,25 @@
+version: '3.8'
+
+services:
+  tensorflow-gpu:
+    image: tensorflow/tensorflow:latest-gpu
+    volumes:
+      - .:/workspace
+      - ./drive:/drive
+      - ~/.vscode-server:$HOME/.vscode-server
+    devices:
+      - /dev:/dev
+    environment:
+      - NVIDIA_VISIBLE_DEVICES=all
+    command: ["tail", "-f", "/dev/null"]
+    restart: no
+    deploy:
+      resources:
+        limits:
+          memory: 8g
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+
