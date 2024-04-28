@@ -103,16 +103,22 @@ test = test\
 .prefetch(tf.data.AUTOTUNE)
 
 # %%
-early_stopping = tcl.EarlyStopping(monitor='val_loss', patience=5, restore_best_weights=True)
-reduce_lr = tcl.ReduceLROnPlateau(monitor='val_loss', factor=0.1, patience=2, min_lr=1e-6)
-history = model.fit(train, epochs = 50, validation_data = test, callbacks=[early_stopping, reduce_lr], batch_size=BATCH)
+try:
+    model.load_weights("/drive/fashion_mnist.weights.h5")
+except:
+    print("No weights found. Training from scratch.")
+    early_stopping = tcl.EarlyStopping(monitor='val_loss', patience=5, restore_best_weights=True)
+    reduce_lr = tcl.ReduceLROnPlateau(monitor='val_loss', factor=0.1, patience=2, min_lr=1e-6)
+    history = model.fit(train, epochs = 50, validation_data = test, callbacks=[early_stopping, reduce_lr], batch_size=BATCH)
+    model.save_weights("/drive/fashion_mnist.weights.h5")
 
 # %%
-h=history.history
-plt.plot(h["loss"], label="Training Loss")
-plt.plot(h["val_loss"], label="Testing Loss")
-plt.legend()
-plt.show()
+if "history" in locals():
+    h=history.history
+    plt.plot(h["loss"], label="Training Loss")
+    plt.plot(h["val_loss"], label="Testing Loss")
+    plt.legend()
+    plt.show()
 
 # %%
 from sklearn.metrics import classification_report, confusion_matrix
