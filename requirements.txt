@@ -3,6 +3,6 @@ numpy
 pandas
 matplotlib
 tensorflow_datasets
-math
-sklearn
+scikit-learn
 seaborn
+datasets
