@@ -25,7 +25,7 @@ DIM = 28
 CH = 3
 BATCH = 32
 TRAIN = True
-EPOCHS = 2
+EPOCHS = 20
 
 # %%
 ds = tfds.load("huggingface:fashion_mnist", split="all", as_supervised=True, data_dir="/drive")
@@ -115,7 +115,7 @@ try:
 except:
     print("No weights found. Training from scratch.")
     early_stopping = tcl.EarlyStopping(monitor='val_loss', patience=5, restore_best_weights=True)
-    reduce_lr = tcl.ReduceLROnPlateau(monitor='val_loss', factor=0.1, patience=2, min_lr=1e-6)
+    reduce_lr = tcl.ReduceLROnPlateau(monitor='val_loss', factor=0.1, patience=2, min_lr=1e-4)
     history = model.fit(train, epochs = EPOCHS, validation_data = test, callbacks=[early_stopping, reduce_lr], batch_size=BATCH)
     model.save_weights("/drive/fashion_mnist.weights.h5")
 
