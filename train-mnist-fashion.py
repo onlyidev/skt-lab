@@ -21,44 +21,48 @@ classes = [
   "Bag",
   "Ankle boot",
 ]
+DIM = 28
+CH = 3
+BATCH = 32
+TRAIN = True
+EPOCHS = 2
 
 # %%
 ds = tfds.load("huggingface:fashion_mnist", split="all", as_supervised=True, data_dir="/drive")
 
 # %%
-DIM = 28
-CH = 3
-BATCH = 32
+def dimensionLoweringConvolutionBlock(filters=32, kernel_size=(3, 3), dropout=0.2, activation='relu', padding="same", normalization=True, dim_divisor=2):
+    s = [
+        tfl.Conv2D(filters, kernel_size, activation=activation, padding=padding),
+        tfl.BatchNormalization(),
+        tfl.Conv2D(filters, kernel_size, activation=activation, padding=padding)
+        ]
+    if (normalization):
+            s.append(tfl.BatchNormalization())
+    s.extend(
+        [
+            tfl.MaxPooling2D((dim_divisor, dim_divisor)),
+            tfl.Dropout(dropout),
+        ]
+    )
+    return tf.keras.Sequential(s)
+
+def mlpHidden(neurons=1, dropout=0.2, activation='relu', normalization=True):
+    s = [ tfl.Dense(neurons, activation=activation) ]
+    if (normalization):
+        s.append(tfl.BatchNormalization())
+    s.append(tfl.Dropout(dropout))
+    return tf.keras.Sequential(s)
+
+# %%
 model = tf.keras.Sequential([
     tfl.Input(shape=(DIM, DIM, CH), batch_size=BATCH),
-
-    tfl.Conv2D(32, (3, 3), activation='relu', padding="same"),
-    tfl.BatchNormalization(),
-    tfl.Conv2D(32, (3, 3), activation='relu', padding="same"),
-    tfl.BatchNormalization(),
-    tfl.MaxPooling2D((2, 2)),
-    tfl.Dropout(0.2),
-
-    tfl.Conv2D(64, (3, 3), activation='relu', padding="same"),
-    tfl.BatchNormalization(),
-    tfl.Conv2D(64, (3, 3), activation='relu', padding="same"),
-    tfl.BatchNormalization(),
-    tfl.MaxPooling2D((2, 2)),
-    tfl.Dropout(0.3),
-
-    tfl.Conv2D(128, (3, 3), activation='relu', padding="same"),
-    tfl.BatchNormalization(),
-    tfl.Conv2D(128, (3, 3), activation='relu', padding="same"),
-    tfl.BatchNormalization(),
-    tfl.MaxPooling2D((2, 2)),
-    tfl.Dropout(0.4),
-
+    dimensionLoweringConvolutionBlock(filters=32, dropout=0.2),
+    dimensionLoweringConvolutionBlock(filters=64, dropout=0.3),
+    dimensionLoweringConvolutionBlock(filters=128, dropout=0.4),
     tfl.Flatten(),
-    tfl.Dense(128, activation='relu'),
-    tfl.BatchNormalization(),
-    tfl.Dropout(0.5),
-
-    tfl.Dense(10, activation='softmax') # 10 classes, probability
+    mlpHidden(neurons=128, dropout=0.5),
+    tfl.Dense(len(classes), activation='softmax') # 10 classes, probability
 ])
 
 # %%
@@ -103,13 +107,16 @@ test = test\
 .prefetch(tf.data.AUTOTUNE)
 
 # %%
+
 try:
+    if TRAIN:
+        raise Exception("Training forced.")
     model.load_weights("/drive/fashion_mnist.weights.h5")
 except:
     print("No weights found. Training from scratch.")
     early_stopping = tcl.EarlyStopping(monitor='val_loss', patience=5, restore_best_weights=True)
     reduce_lr = tcl.ReduceLROnPlateau(monitor='val_loss', factor=0.1, patience=2, min_lr=1e-6)
-    history = model.fit(train, epochs = 50, validation_data = test, callbacks=[early_stopping, reduce_lr], batch_size=BATCH)
+    history = model.fit(train, epochs = EPOCHS, validation_data = test, callbacks=[early_stopping, reduce_lr], batch_size=BATCH)
     model.save_weights("/drive/fashion_mnist.weights.h5")
 
 # %%
